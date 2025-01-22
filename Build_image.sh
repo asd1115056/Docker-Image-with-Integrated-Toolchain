@@ -70,6 +70,15 @@ elif [ "$BUILD_MODE" = "push" ]; then
     DOCKER_BUILD_ACTION="--push"
 fi
 
+# Make sure Docker Hub is able to login
+if [ "$BUILD_MODE" = "push" ]; then
+    echo "Checking Docker login..."
+    if ! docker info | grep -q Username; then
+        echo "Error: Not logged in to Docker Hub. Please log in before pushing."
+        exit 1
+    fi
+fi
+
 # Run the build process with buildx
 echo "Starting Docker build with config: $CONFIG_NAME in '$BUILD_MODE' mode"
 if docker buildx build --progress=plain \
