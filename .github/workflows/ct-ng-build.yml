@@ -28,6 +28,7 @@ jobs:
     strategy:
       matrix:
         config: ${{ fromJson(needs.discover-configs.outputs.configs) }}
+      max-parallel: 1 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
