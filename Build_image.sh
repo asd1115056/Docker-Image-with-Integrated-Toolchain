@@ -42,8 +42,14 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 
+# Ensure Docker is running
+if ! docker info >/dev/null 2>&1; then
+    echo "Error: Docker is not running. Please start the Docker daemon and try again."
+    exit 1
+fi
+
 # Confirm the config to be used
-echo "Using ct-ng config: $CONFIG_FILE"
+echo "Using ct-ng config: ${CONFIG_FILE}"
 
 # Ensure docker buildx is available
 if ! docker buildx version >/dev/null 2>&1; then
@@ -70,27 +76,30 @@ elif [ "$BUILD_MODE" = "push" ]; then
     DOCKER_BUILD_ACTION="--push"
 fi
 
-# Make sure Docker Hub is able to login
+# Get Docker Hub username from `docker info`
 if [ "$BUILD_MODE" = "push" ]; then
-    echo "Checking Docker login..."
-    if ! docker info | grep -q Username; then
+    DOCKER_USERNAME=$(docker info --format '{{.Username}}')
+    if [ -z "$DOCKER_USERNAME" ]; then
         echo "Error: Not logged in to Docker Hub. Please log in before pushing."
         exit 1
     fi
+    echo "Using Docker Hub username: $DOCKER_USERNAME"
 fi
 
 # Run the build process with buildx
+IMAGE_TAG="${DOCKER_USERNAME:-local}/ct-ng:${CONFIG_NAME%.config}"
 echo "Starting Docker build with config: $CONFIG_NAME in '$BUILD_MODE' mode"
 if docker buildx build --progress=plain \
     --build-arg CT_NG_CONFIG="$CONFIG_NAME" \
-    -t ct-ng-"${CONFIG_NAME%.config}" $DOCKER_BUILD_ACTION .; then
-    echo "Docker image built successfully: ct-ng-${CONFIG_NAME%.config}"
+    -t "$IMAGE_TAG" $DOCKER_BUILD_ACTION .; then
+    echo "Docker image built successfully: $IMAGE_TAG"
+
     if [ "$BUILD_MODE" = "load" ]; then
         echo "Image loaded into local Docker daemon."
     elif [ "$BUILD_MODE" = "push" ]; then
         echo "Image pushed to the remote registry."
     fi
 else
-    echo "Docker build failed!"
+    echo "Error: Docker build failed!"
     exit 1
 fi
