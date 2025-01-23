@@ -2,22 +2,19 @@
 
 # Default directory for configs
 CONFIGS_DIR="./ctng_configs"
-BUILD_MODE="load" # Default to --load
 
 # Usage information
 usage() {
-    echo "Usage: $0 -c CONFIG_NAME [-m MODE]"
+    echo "Usage: $0 -c CONFIG_NAME"
     echo "  -c CONFIG_NAME   Specify the ct-ng config name (required)"
-    echo "  -m MODE          Build mode: 'load' (default) or 'push'"
-    echo "Example: $0 -c arm-unknown-linux-uclibcgnueabi.config -m push"
+    echo "Example: $0 -c arm-unknown-linux-uclibcgnueabi.config"
     exit 1
 }
 
 # Parse arguments
-while getopts "c:m:h" opt; do
+while getopts "c:h" opt; do
     case "$opt" in
     c) CONFIG_NAME="$OPTARG" ;;
-    m) BUILD_MODE="$OPTARG" ;;
     h) usage ;;
     *) usage ;;
     esac
@@ -26,12 +23,6 @@ done
 # Ensure CONFIG_NAME is provided
 if [ -z "$CONFIG_NAME" ]; then
     echo "Error: CONFIG_NAME is required."
-    usage
-fi
-
-# Ensure BUILD_MODE is valid
-if [ "$BUILD_MODE" != "load" ] && [ "$BUILD_MODE" != "push" ]; then
-    echo "Error: Invalid mode '$BUILD_MODE'. Allowed values are 'load' or 'push'."
     usage
 fi
 
@@ -68,37 +59,17 @@ else
         --driver-opt env.BUILDKIT_STEP_LOG_MAX_SPEED=-1
 fi
 
-# Determine build action based on mode
-DOCKER_BUILD_ACTION=""
-if [ "$BUILD_MODE" = "load" ]; then
-    DOCKER_BUILD_ACTION="--load"
-elif [ "$BUILD_MODE" = "push" ]; then
-    DOCKER_BUILD_ACTION="--push"
-fi
-
-# Get Docker Hub username from `docker info`
-if [ "$BUILD_MODE" = "push" ]; then
-    DOCKER_USERNAME=$(docker info --format '{{.Username}}')
-    if [ -z "$DOCKER_USERNAME" ]; then
-        echo "Error: Not logged in to Docker Hub. Please log in before pushing."
-        exit 1
-    fi
-    echo "Using Docker Hub username: $DOCKER_USERNAME"
-fi
+# Set build action to load
+DOCKER_BUILD_ACTION="--load"
 
 # Run the build process with buildx
-IMAGE_TAG="${DOCKER_USERNAME:-local}/ct-ng:${CONFIG_NAME%.config}"
-echo "Starting Docker build with config: $CONFIG_NAME in '$BUILD_MODE' mode"
+IMAGE_TAG="local/ct-ng:${CONFIG_NAME%.config}"
+echo "Starting Docker build with config: $CONFIG_NAME in 'load' mode"
 if docker buildx build --progress=plain \
     --build-arg CT_NG_CONFIG="$CONFIG_NAME" \
     -t "$IMAGE_TAG" $DOCKER_BUILD_ACTION .; then
     echo "Docker image built successfully: $IMAGE_TAG"
-
-    if [ "$BUILD_MODE" = "load" ]; then
-        echo "Image loaded into local Docker daemon."
-    elif [ "$BUILD_MODE" = "push" ]; then
-        echo "Image pushed to the remote registry."
-    fi
+    echo "Image loaded into local Docker daemon."
 else
     echo "Error: Docker build failed!"
     exit 1

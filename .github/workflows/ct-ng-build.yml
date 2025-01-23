@@ -39,9 +39,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Ensure script is executable
-        run: chmod +x ./Build_image.sh
-
       - name: Free disk space
         run: |
           # https://github.com/jlumbroso/free-disk-space
@@ -57,4 +54,15 @@ jobs:
           df -h
 
       - name: Build and Push Docker image
-        run: ./Build_image.sh -c "${{ matrix.config }}" -m push
+        run: chmod +x ./Build_image.sh && ./Build_image.sh -c "${{ matrix.config }}"
+
+      - name: Rename image
+        run: |
+          docker images 
+          image_name=$(echo "${{ matrix.config }}" | sed 's/\.config$//')
+          docker tag local/ct-ng:${image_name} ${{ secrets.DOCKER_USERNAME }}/ct-ng:${image_name}
+
+      - name: Push to Docker Hub
+        run: |
+          image_name=$(echo "${{ matrix.config }}" | sed 's/\.config$//')
+          docker push ${{ secrets.DOCKER_USERNAME }}/ct-ng:${image_name}
