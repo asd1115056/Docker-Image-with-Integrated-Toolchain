@@ -18,6 +18,7 @@ jobs:
       - name: Discover ct-ng config files
         id: set-matrix
         run: |
+          cd docker_build
           configs=$(find ./ctng_configs -type f -name "*.config" -exec basename {} \; | jq -R . | jq -s -c .)
           echo "Discovered configs: $configs"
           echo "::set-output name=configs::$configs"
@@ -58,19 +59,18 @@ jobs:
           sudo docker image prune --all --force || true
           sudo rm -rf "$AGENT_TOOLSDIRECTORY" || true
 
-          # Display disk usage after cleanup
-          df -h
-
       - name: Build and Push Docker image
-        run: chmod +x ./Build_image.sh && ./Build_image.sh -c "${{ matrix.config }}"
+        run: |
+          cd docker_build
+          chmod +x ./Build_image.sh
+          ./Build_image.sh -c "${{ matrix.config }}"
 
       - name: Rename image
         run: |
-          docker images 
-          image_name=$(echo "${{ matrix.config }}" | sed 's/\.config$//')
+          image_name=$(basename "${{ matrix.config }}" .config)
           docker tag local/ct-ng:${image_name} ${{ secrets.DOCKER_USERNAME }}/ct-ng:${image_name}
 
       - name: Push to Docker Hub
         run: |
-          image_name=$(echo "${{ matrix.config }}" | sed 's/\.config$//')
+          image_name=$(basename "${{ matrix.config }}" .config)
           docker push ${{ secrets.DOCKER_USERNAME }}/ct-ng:${image_name}

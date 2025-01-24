@@ -1,6 +1,6 @@
 # Docker-Image-with-Integrated-Toolchain
 
-This repository provides a Docker-based solution for building cross-compilation toolchains using Crosstool-NG. 
+This repository provides a Docker-based solution for building cross-compilation toolchains using Crosstool-NG.
 
 ## Getting Started
 
@@ -10,30 +10,32 @@ This repository provides a Docker-based solution for building cross-compilation 
 
 ### Repository Structure
 
-- **Configuration Files**: Contains various Crosstool-NG configuration files.
-  - Directory: `ctng_configs/`
-  - Example configurations: `arm-unknown-linux-uclibcgnueabi.config`, `aarch64-unknown-linux-uclibc.config`
-
-- **Build Script**: Script to build Docker images based on specified configurations.
+- **Build**: Contains scripts and configurations for building Docker images.
+  - Directory: `docker_build/`
   - Script: `Build_image.sh`
-  - Supports `load` and `push` modes for Docker images.
+  - Configuration Files: `ctng_configs/`
+    - Example configurations: `arm-unknown-linux-uclibcgnueabi.config`, `aarch64-unknown-linux-uclibc.config`
 
+- **Run**: Contains scripts for running Docker images.
+  - Directory: `docker_run/`
+  - Script: `start_service.sh`
+  - Docker Compose file: `docker-compose.yml`
+  - Environment variables: `.env`
 
 ### Local Build
 
 Run the build script with a specified configuration:
 
 ```bash
-./Build_image.sh -c arm-unknown-linux-uclibcgnueabi.config
+./docker_build/Build_image.sh -c arm-unknown-linux-uclibcgnueabi.config
 ```
 
-And, the default image's name will be `local/ct-ng:<ctng config name >`
+The default image's name will be `local/ct-ng:<ctng config name>`
 
 ### Usage
 
-The toolchain will in `/home/ctng/x-tools`. You can mount to host or just use it in container.
+To start the container, run:
 
-Docker Compose:
-
-```ymal
+```bash
+./run_docker.sh
 ```
