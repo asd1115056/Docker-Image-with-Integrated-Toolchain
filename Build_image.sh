@@ -65,7 +65,7 @@ DOCKER_BUILD_ACTION="--load"
 # Run the build process with buildx
 IMAGE_TAG="local/ct-ng:${CONFIG_NAME%.config}"
 echo "Starting Docker build with config: $CONFIG_NAME in 'load' mode"
-if docker buildx build --progress=plain \
+if docker buildx build --progress=plain --target final \
     --build-arg CT_NG_CONFIG="$CONFIG_NAME" \
     -t "$IMAGE_TAG" $DOCKER_BUILD_ACTION .; then
     echo "Docker image built successfully: $IMAGE_TAG"
