@@ -1,51 +1,35 @@
-FROM ubuntu:22.04
+# Stage 1: Install dependencies
+FROM ubuntu:22.04 AS base
 
-# Define build parameters
-ARG CTNG_UID=1000
-ARG CTNG_GID=1000
-ARG CT_NG_CONFIG=default.config
+# Define build arguments
+ARG DEBIAN_FRONTEND=noninteractive
 
-# Environment variables
-ENV DEBIAN_FRONTEND=noninteractive \
-    TZ=UTC \
-    PATH="/opt/ctng/bin:${PATH}"
-
-# Install required tools and dependencies
+# Install dependencies
 RUN apt-get update && apt-get install -y \
-    sudo \
-    gcc \
-    g++ \
-    gperf \
-    bison \
-    flex \
-    texinfo \
-    help2man \
-    make \
-    libncurses5-dev \
-    python3-dev \
-    autoconf \
-    automake \
-    libtool \
-    libtool-bin \
-    gawk \
-    wget \
-    bzip2 \
-    xz-utils \
-    unzip \
-    patch \
-    libstdc++6 \
-    rsync \
-    git \
-    curl \
-    jq \
-    vim \
-    nano \
-    ca-certificates \
-    --no-install-recommends && \
-    apt-get -y autoremove --purge && \
+    gcc g++ gperf bison flex texinfo help2man make \
+    libncurses5-dev python3-dev autoconf automake \
+    libtool libtool-bin gawk wget bzip2 xz-utils unzip \
+    patch libstdc++6 rsync git curl jq vim nano \
+    ca-certificates --no-install-recommends && \
+    apt-get autoremove -y --purge && \
     rm -rf /var/lib/apt/lists/*
 
-# Download and install Crosstool-NG
+# Stage 2: Install Crosstool-NG and create user
+FROM base AS ctng-install
+
+# Define build arguments
+ARG CTNG_UID=1000
+ARG CTNG_GID=1000
+
+# Set environment variables
+ENV PATH="/usr/local/bin:$PATH"
+
+# Create user and group for non-root builds
+RUN groupadd -g ${CTNG_GID} ctng && \
+    useradd -d /home/ctng -m -g ${CTNG_GID} -u ${CTNG_UID} -s /bin/bash ctng && \
+    ls /home/ctng -al
+
+# Clone and install Crosstool-NG
 WORKDIR /opt
 RUN git clone https://github.com/crosstool-ng/crosstool-ng.git && \
     cd crosstool-ng && \
@@ -55,29 +39,59 @@ RUN git clone https://github.com/crosstool-ng/crosstool-ng.git && \
     make install && \
     rm -rf /opt/crosstool-ng
 
-# Create work user
+# Stage 3: Compilation toolchain
+FROM ctng-install AS toolchain-build
+
+# Define build arguments
+ARG CT_NG_CONFIG=default.config
+
+# Set environment variables
+ENV PATH="/usr/local/bin:$PATH"
+
+# Switch to ctng user for non-root builds
+USER ctng
+
+# Prepare the build environment
+WORKDIR /home/ctng
+COPY ctng_configs ./ctng_config
+
+# Compile the toolchain
+RUN mkdir -p build_temp src && \
+    cp ctng_config/${CT_NG_CONFIG} build_temp/.config && \
+    cd build_temp && \
+    ct-ng upgradeconfig && \
+    ct-ng build -j$(nproc --ignore=1) && \
+    ls -al /home/ctng/x-tools
+
+# Clean up unnecessary files
+RUN ls /home/ctng -al
+
+# Stage 4: Final operating environment
+FROM ubuntu:22.04 AS final
+
+# Define build arguments
+ARG CTNG_UID=1000
+ARG CTNG_GID=1000
+ARG CT_NG_CONFIG=default.config
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    PATH="/home/ctng/x-tools/bin:$PATH"
+
+# Create user and set permissions for the ctng user
 RUN groupadd -g ${CTNG_GID} ctng && \
     useradd -d /home/ctng -m -g ${CTNG_GID} -u ${CTNG_UID} -s /bin/bash ctng && \
-    echo "ctng ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-# Set working directory
-WORKDIR /home/ctng
+    echo "ctng ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    chown -R ctng:ctng /home/ctng && \
+    ls /home/ctng -al
 
 # Switch to normal user
 USER ctng
 
-# Copy configuration files
-COPY ctng_configs /home/ctng/ctng_config
+WORKDIR /home/ctng
 
-# Set up and build the toolchain
-RUN mkdir -p /home/ctng/build_temp && \
-    mkdir -p /home/ctng/src && \
-    cp /home/ctng/ctng_config/${CT_NG_CONFIG} /home/ctng/build_temp/.config && \
-    cd /home/ctng/build_temp && \
-    ct-ng upgradeconfig && \
-    ct-ng build -j$(nproc --ignore=1) && \
-    rm -rf /home/ctng/src && \
-    rm -rf /home/ctng/build_temp
+# Copy the toolchain from the build stage
+COPY --from=toolchain-build /home/ctng/x-tools /home/ctng/x-tools
 
 # Update PATH to include the toolchain binaries
 RUN echo "export PATH=/home/ctng/x-tools/${CT_NG_CONFIG%.config}/bin:\$PATH" >> /home/ctng/.bashrc
