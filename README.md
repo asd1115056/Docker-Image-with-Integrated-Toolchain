@@ -52,6 +52,18 @@ To manage the Docker containers, you can use the `run_docker.sh` script with the
   ```
   You will be prompted to select a service by number from the available services listed.
 
+### Mounting Workspace and Toolchain
+
+When using Docker Compose, you can mount your local directories for the toolchain and workspace. This allows you to persist data and share files between your host and the container. The following volumes are defined in the `docker-compose.yml`:
+
+```yaml
+volumes:
+  - ./data/toolchains:/home/ctng/toolchains
+  - ./data/workspace:/home/ctng/workspace
+```
+
+This configuration mounts the `./data/toolchains` directory from your host to `/home/ctng/toolchains` in the container, and the `./data/workspace` directory to `/home/ctng/workspace`.
+
 ### Docker Compose Configuration
 
 To use Docker Compose, you can define your services in the `docker-compose.yml` file located in the `docker_run/` directory. Here is an example configuration:
@@ -68,6 +80,9 @@ services:
       - CTNG_UID=1000
       - CTNG_GID=1000
       - TZ=Asia/Taipei
+    volumes:
+      - ./data/toolchains:/home/ctng/toolchains
+      - ./data/workspace:/home/ctng/workspace
 ```
 
 ### Example
