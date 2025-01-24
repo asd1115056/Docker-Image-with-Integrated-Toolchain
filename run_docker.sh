@@ -15,6 +15,7 @@ start_service() {
         exit 1
     }
     # Get the current running container names
+    cd ..
     SERVICE_NAMES=$(get_service_names)
     echo "Currently running containers: ${SERVICE_NAMES}"
 }
