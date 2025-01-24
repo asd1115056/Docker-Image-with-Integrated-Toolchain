@@ -1,0 +1,11 @@
+services:
+  arm-crosstool-ng:
+    image: asd1115056/ct-ng:arm-unknown-linux-uclibcgnueabi
+    container_name: arm-crosstool-ng
+    tty: true
+    environment:
+      - CTNG_UID=1000
+      - CTNG_GID=1000
+      - TZ=Asia/Taipei
+    volumes:
+      - ./data/toolchains:/home/ctng/x-tools

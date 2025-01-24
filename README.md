@@ -1,4 +1,4 @@
-# Docker-Image-with-Integrated-Toolchain-for-Cross-Compilation# Docker-Image-with-Integrated-Toolchain-for-Cross-Compilation
+# Docker-Image-with-Integrated-Toolchain
 
 This repository provides a Docker-based solution for building cross-compilation toolchains using Crosstool-NG. 
 
@@ -19,10 +19,21 @@ This repository provides a Docker-based solution for building cross-compilation 
   - Supports `load` and `push` modes for Docker images.
 
 
-### Usage
+### Local Build
 
 Run the build script with a specified configuration:
 
 ```bash
 ./Build_image.sh -c arm-unknown-linux-uclibcgnueabi.config
+```
+
+And, the default image's name will be `local/ct-ng:<ctng config name >`
+
+### Usage
+
+The toolchain will in `/home/ctng/x-tools`. You can mount to host or just use it in container.
+
+Docker Compose:
+
+```ymal
 ```

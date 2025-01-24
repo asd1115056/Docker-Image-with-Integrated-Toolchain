@@ -78,6 +78,27 @@ ARG CT_NG_CONFIG=default.config
 ENV DEBIAN_FRONTEND=noninteractive \
     PATH="/home/ctng/x-tools/bin:$PATH"
 
+# Install necessary packages for compilation and common tools
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
+    python3-pip \
+    git \
+    make \
+    cmake \
+    sudo \
+    wget \
+    curl \
+    vim \
+    nano \
+    ca-certificates \
+    net-tools \
+    --no-install-recommends && \
+    apt-get autoremove -y --purge && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Create user and set permissions for the ctng user
 RUN groupadd -g ${CTNG_GID} ctng && \
     useradd -d /home/ctng -m -g ${CTNG_GID} -u ${CTNG_UID} -s /bin/bash ctng && \
