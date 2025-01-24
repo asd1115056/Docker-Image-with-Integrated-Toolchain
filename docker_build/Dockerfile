@@ -103,8 +103,7 @@ RUN apt-get update && apt-get install -y \
 RUN groupadd -g ${CTNG_GID} ctng && \
     useradd -d /home/ctng -m -g ${CTNG_GID} -u ${CTNG_UID} -s /bin/bash ctng && \
     echo "ctng ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
-    chown -R ctng:ctng /home/ctng && \
-    ls /home/ctng -al
+    chown -R ctng:ctng /home/ctng
 
 # Switch to normal user
 USER ctng
@@ -112,10 +111,12 @@ USER ctng
 WORKDIR /home/ctng
 
 # Copy the toolchain from the build stage
-COPY --from=toolchain-build /home/ctng/x-tools /home/ctng/x-tools
+COPY --from=toolchain-build /home/ctng/x-tools /opt/x-tools
 
-# Update PATH to include the toolchain binaries
-RUN echo "export PATH=/home/ctng/x-tools/${CT_NG_CONFIG%.config}/bin:\$PATH" >> /home/ctng/.bashrc
+# Copy init.sh to the container
+COPY init.sh init.sh
+
+RUN sudo chmod +x init.sh
 
 # Keep container running after build
-CMD ["tail", "-f", "/dev/null"]
+CMD ["/bin/bash", "-c", "/home/ctng/init.sh && tail -f /dev/null"]

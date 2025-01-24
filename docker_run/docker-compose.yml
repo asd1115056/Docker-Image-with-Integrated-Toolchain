@@ -8,5 +8,6 @@ services:
       - CTNG_UID=1000
       - CTNG_GID=1000
       - TZ=Asia/Taipei
-    # volumes:
-    #   - ./data/toolchains:/home/ctng/toolchain
+    volumes:
+      - ./data/toolchains:/home/ctng/toolchains
+      - ./data/workspace:/home/ctng/workspace
