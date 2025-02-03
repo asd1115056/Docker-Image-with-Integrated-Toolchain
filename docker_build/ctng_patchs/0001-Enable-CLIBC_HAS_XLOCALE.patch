@@ -1,0 +1,24 @@
+From 04b50f1554dfa2833c64c5ba8819a65bfcc1bd2f Mon Sep 17 00:00:00 2001
+From: asd1115056 <asd1115056@gmail.com>
+Date: Tue, 4 Feb 2025 03:05:57 +0800
+Subject: [PATCH] feat: Enable CLIBC_HAS_XLOCALE
+
+---
+ scripts/build/libc/uClibc-ng.sh | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/scripts/build/libc/uClibc-ng.sh b/scripts/build/libc/uClibc-ng.sh
+index 7b81d92c..335196c1 100644
+--- a/scripts/build/libc/uClibc-ng.sh
++++ b/scripts/build/libc/uClibc-ng.sh
+@@ -213,6 +213,7 @@ manage_uClibc_config()
+             CT_KconfigDisableOption "UCLIBC_HAS_LOCALE" "${dst}"
+     else
+             CT_KconfigEnableOption "UCLIBC_HAS_LOCALE" "${dst}"
++            CT_KconfigEnableOption "UCLIBC_HAS_XLOCALE" "${dst}"
+             CT_KconfigDeleteOption "UCLIBC_PREGENERATED_LOCALE_DATA" "${dst}"
+             CT_KconfigDeleteOption "UCLIBC_DOWNLOAD_PREGENERATED_LOCALE_DATA" "${dst}"
+     fi
+-- 
+2.34.1
+

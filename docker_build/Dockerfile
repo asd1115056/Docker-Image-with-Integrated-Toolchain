@@ -31,13 +31,38 @@ RUN groupadd -g ${CTNG_GID} ctng && \
 
 # Clone and install Crosstool-NG
 WORKDIR /opt
-RUN git clone https://github.com/crosstool-ng/crosstool-ng.git && \
-    cd crosstool-ng && \
+
+# Prepare patchs
+COPY ctng_patchs ./ctng_patchs
+
+# Clone the repository
+RUN git clone https://github.com/crosstool-ng/crosstool-ng.git
+
+# Copy patches to the cloned repository
+RUN cp ctng_patchs/* crosstool-ng
+
+# Set global git config
+RUN cd crosstool-ng && \
+    git config --global user.email "you@example.com" && \
+    git config --global user.name "Your Name"
+
+# Apply patches if they exist
+RUN cd crosstool-ng && \
+    if ls *.patch 1> /dev/null 2>&1; then \
+    git am *.patch; \
+    else \
+    echo "No patch files found."; \
+    fi
+
+# Build and install Crosstool-NG
+RUN cd crosstool-ng && \
     ./bootstrap && \
     ./configure --prefix=/usr/local && \
     make -j$(nproc) && \
-    make install && \
-    rm -rf /opt/crosstool-ng
+    make install
+
+# Clean up
+RUN rm -rf /opt/crosstool-ng
 
 # Stage 3: Compilation toolchain
 FROM ctng-install AS toolchain-build
